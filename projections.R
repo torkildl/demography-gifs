@@ -1,10 +1,9 @@
-library(gapminder)
 library(data.table)
 library(tidyverse)
 library(gganimate)
 library(here)
 
-MMMM <- fread(here("./131613.csv"))
+MMMM <- fread("http://data.ssb.no/api/v0/dataset/131613.csv?lang=no")
 
 # Clean and tidy the data a bit, and remove superfluous information
 immdata <- MMMM %>%
@@ -39,11 +38,11 @@ pyramid <- ggplot(mapping = aes(x=age,fill=immcat,frame=year)) +
     coord_flip() +
     labs(title = "Norway's population by national background", x = "", y = "", fill="") + 
     theme(legend.position="right", legend.title = element_blank(), legend.text = element_text(size=10))
-gganimate(pyramid, title_frame = T, filename = here("./projections.gif"), ani.width=800, ani.heigh=800, extra.opts="-delay 50")
+gganimate(pyramid, title_frame = T, filename = here("./projections.gif"), ani.width=800, ani.height=800, extra.opts="-delay 50")
 
 
 # A pyramid for the period 1846-2016.     
-historical <- fread("./59322.txt")
+historical <- fread("http://data.ssb.no/api/v0/dataset/59322.csv?lang=no")
 
 histdata <- historical %>%
     setNames(nm = c("age","sex","year","unit","population")) %>%
