@@ -1,5 +1,6 @@
 library(data.table)
 library(tidyverse)
+library(animation)
 library(gganimate)
 library(here)
 
@@ -12,22 +13,24 @@ immdata <- MMMM %>%
     mutate(age = as.numeric(str_sub(age,start=1, end=3))) %>%
     mutate(sex = ifelse(str_sub(sex,1,3)=="1 M", "Male","Female")) %>%
     filter(str_sub(immigrant,1,2)!="00") %>%
-    mutate(immcat = case_when(str_sub(immigrant,1,2)=="01" ~ "1G Western",
+    mutate(immcat = factor(case_when(str_sub(immigrant,1,2)=="99" ~ "0G Natives",
+                                     str_sub(immigrant,1,2)=="01" ~ "1G Western",
                               str_sub(immigrant,1,2)=="02" ~ "2G Western",
                               str_sub(immigrant,1,2)=="03" ~ "1G East EU",
                               str_sub(immigrant,1,2)=="04" ~ "2G East EU",
                               str_sub(immigrant,1,2)=="05" ~ "1G Nonwest",
-                              str_sub(immigrant,1,2)=="06" ~ "2G Nonwest",
-                              str_sub(immigrant,1,2)=="99" ~ "Natives+++")) %>%
-    select(year, sex ,age, immigrant, everything()) %>%
-    arrange(year,sex,age,immigrant) %>%
+                              str_sub(immigrant,1,2)=="06" ~ "2G Nonwest"))) %>%
+    #mutate(immcat = factor(immcat, levels(.$immcat)[c(
+    select(year, sex ,age, immcat, everything()) %>%
+    arrange(year,sex,age,immcat) %>%
     group_by(year,sex,age) %>%
     #    arrange(year,sex,age,immigrant) %>%
     mutate(slutt = cumsum(population)) %>%
-    mutate(start = slutt-population)
-head(immdata,20)
+    mutate(start = slutt-population) %>%
+    arrange(desc(immcat))     
 
-pyears <- seq(2016,2100,5)
+pyears <- seq(2016,2100,1)
+#pyramid <- ggplot(mapping = aes(x=age,fill=factor(immcat,levels(immcat)[c(4,5,1:3)]),frame=year)) + 
 pyramid <- ggplot(mapping = aes(x=age,fill=immcat,frame=year)) + 
     geom_ribbon(data=filter(immdata,sex=="Male", year %in% pyears), mapping=aes(ymin=start, ymax=slutt)) + 
     geom_ribbon(data=filter(immdata,sex=="Female", year %in% pyears), mapping=aes(ymin=-1*start, ymax=-1*slutt)) + 
@@ -38,7 +41,11 @@ pyramid <- ggplot(mapping = aes(x=age,fill=immcat,frame=year)) +
     coord_flip() +
     labs(title = "Norway's population by national background", x = "", y = "", fill="") + 
     theme(legend.position="right", legend.title = element_blank(), legend.text = element_text(size=10))
-gganimate(pyramid, title_frame = T, filename = here("./projections.gif"), ani.width=800, ani.height=800, extra.opts="-delay 50")
+
+
+ani.options(interval = 0.50)
+immpyra <- gganimate(pyramid, title_frame = T, ani.width=800, ani.height=800, extra.opts="-delay 50")
+gganimate_save(immpyra, filename = here("./projections.gif"))
 
 
 # A pyramid for the period 1846-2016.     
@@ -62,7 +69,7 @@ histpyra <- ggplot(histdata, aes(x=age, y=population, fill=sex, frame=year)) +
     coord_flip() +
     labs(title = "Norway's population in", x = "", y = "", fill="") + 
     theme(legend.position="none")
-histpyra
 
+ani.options(interval = 0.50)
 histpyra_anim <- gganimate(histpyra, title_frame = T)
 gganimate_save(histpyra_anim, filename=here("./historical-pyramid.gif"),loop = 0, fps = 4)
